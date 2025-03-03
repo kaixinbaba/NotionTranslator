@@ -15,11 +15,10 @@ class Translator:
     def translate_word(self, word):
         """Translate a word and get its English explanation using DeepSeek API"""
         try:
-            prompt = f"""Translate the word "{word}" and provide its information.
+            prompt = f"""Translate the word "{word}" to Chinese and provide a simple English explanation.
 Please respond in the following format only:
-Chinese: [Chinese translation (keep it simple)]
-English: [Simple explanation in English (maximum 10 words)]
-Phonetic: [Standard phonetic transcription of the word]"""
+Chinese: [Chinese translation]
+English: [Simple explanation in English (maximum 10 words)]"""
 
             response = requests.post(
                 self.api_url,
@@ -44,11 +43,6 @@ Phonetic: [Standard phonetic transcription of the word]"""
                         translations['chinese'] = line.replace('Chinese:', '').strip()
                     elif line.startswith('English:'):
                         translations['english'] = line.replace('English:', '').strip()
-                    elif line.startswith('Phonetic:'):
-                        translations['phonetic'] = line.replace('Phonetic:', '').strip()
-
-                if not all(key in translations for key in ['chinese', 'english', 'phonetic']):
-                    logger.warning(f"Incomplete translation response for word '{word}': {translations}")
 
                 return translations
             else:
