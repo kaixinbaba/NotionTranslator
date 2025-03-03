@@ -14,8 +14,22 @@ config = load_config()
 notion_handler = NotionHandler(config['NOTION_TOKEN'])
 translator = Translator(config['DEEPSEEK_API_KEY'])
 
+@app.route('/')
+def health_check():
+    """Health check endpoint"""
+    logger.info("Health check request received")
+    return jsonify({
+        'status': 'healthy',
+        'service': 'notion-translator',
+        'endpoints': [
+            {'path': '/', 'methods': ['GET'], 'description': 'Health check'},
+            {'path': '/webhook', 'methods': ['GET', 'POST'], 'description': 'Notion webhook endpoint'}
+        ]
+    })
+
 @app.route('/webhook', methods=['GET', 'POST'])
 def handle_webhook():
+    """Handle Notion webhook requests"""
     try:
         if request.method == 'GET':
             # Handle Notion's URL verification
