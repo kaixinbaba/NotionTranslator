@@ -14,39 +14,82 @@ config = load_config()
 notion_handler = NotionHandler(config['NOTION_TOKEN'])
 translator = Translator(config['DEEPSEEK_API_KEY'])
 
-@app.route('/webhook', methods=['POST'])
+@app.route('/webhook', methods=['GET', 'POST'])
 def handle_webhook():
     try:
+        if request.method == 'GET':
+            # Handle Notion's URL verification
+            challenge = request.args.get('challenge')
+            if challenge:
+                return jsonify({'challenge': challenge})
+            return jsonify({'status': 'ok'})
+
         payload = request.json
+        logger.info(f"Received webhook payload: {json.dumps(payload)}")
 
-        # Handle Notion's URL verification
-        if payload.get('type') == 'url_verification':
-            return jsonify({'challenge': payload['challenge']})
+        # Validate payload structure
+        if not payload.get('data'):
+            logger.error("Invalid payload: Missing 'data' field")
+            return jsonify({'error': 'Invalid payload structure: Missing data field'}), 400
 
-        # Process page updates
-        if payload.get('type') == 'page_updated':
-            page_id = payload['page']['id']
+        # Extract word from the payload
+        try:
+            properties = payload['data'].get('properties', {})
+            word_property = properties.get('Word', {})
+            title = word_property.get('title', [])
 
-            # Get page content
-            page_content = notion_handler.get_page_content(page_id)
+            if not title or not isinstance(title, list):
+                raise KeyError("Invalid or missing title array")
 
-            # Translate new content
-            translated_content = translator.translate_content(
-                page_content,
-                target_language='spanish'  # You can make this configurable if needed
-            )
+            word = title[0]['text']['content']
+            page_id = payload['data']['id']
 
-            # Update Notion page with translations
-            notion_handler.update_page_content(page_id, translated_content)
+            logger.info(f"Processing word: '{word}' for page: {page_id}")
 
-            logger.info(f"Successfully processed page update for {page_id}")
-            return jsonify({'status': 'success'}), 200
+        except (KeyError, IndexError, TypeError) as e:
+            logger.error(f"Error extracting data from webhook: {str(e)}")
+            logger.debug(f"Received payload structure: {json.dumps(payload)}")
+            return jsonify({
+                'error': 'Invalid payload structure', 
+                'details': f'Could not extract word or page ID: {str(e)}'
+            }), 400
 
-        return jsonify({'status': 'ignored'}), 200
+        # Get translations
+        try:
+            translations = translator.translate_word(word)
+            logger.info(f"Got translations for '{word}': {translations}")
+
+            if not translations.get('chinese') or not translations.get('english'):
+                raise ValueError("Translation response missing required fields")
+
+        except Exception as e:
+            logger.error(f"Translation error for word '{word}': {str(e)}")
+            return jsonify({
+                'error': 'Translation failed',
+                'details': str(e)
+            }), 500
+
+        # Update Notion page with translations
+        try:
+            notion_handler.update_translations(page_id, translations)
+            logger.info(f"Successfully updated translations for word: '{word}' in page: {page_id}")
+
+        except Exception as e:
+            logger.error(f"Failed to update Notion page {page_id}: {str(e)}")
+            return jsonify({
+                'error': 'Failed to update Notion page',
+                'details': str(e)
+            }), 500
+
+        return jsonify({
+            'status': 'success',
+            'word': word,
+            'translations': translations
+        }), 200
 
     except Exception as e:
-        logger.error(f"Error processing webhook: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        logger.error(f"Unexpected error processing webhook: {str(e)}")
+        return jsonify({'error': 'Internal server error', 'details': str(e)}), 500
 
 if __name__ == '__main__':
     # ALWAYS serve the app on port 5000

@@ -704,6 +704,7 @@ dependencies = [
     { name = "google-cloud-translate" },
     { name = "notion-client" },
     { name = "python-dotenv" },
+    { name = "requests" },
     { name = "sift-stack-py" },
 ]
 
@@ -713,6 +714,7 @@ requires-dist = [
     { name = "google-cloud-translate", specifier = ">=3.20.1" },
     { name = "notion-client", specifier = ">=2.3.0" },
     { name = "python-dotenv", specifier = ">=1.0.1" },
+    { name = "requests", specifier = ">=2.32.3" },
     { name = "sift-stack-py", specifier = ">=0.4.1" },
 ]
 

@@ -8,5 +8,6 @@ dependencies = [
     "google-cloud-translate>=3.20.1",
     "notion-client>=2.3.0",
     "python-dotenv>=1.0.1",
+    "requests>=2.32.3",
     "sift-stack-py>=0.4.1",
 ]

@@ -52,3 +52,33 @@ class NotionHandler:
         except Exception as e:
             logger.error(f"Error updating page content: {str(e)}")
             raise
+
+    def update_translations(self, page_id, translations):
+        """Update translation fields in the Notion database"""
+        try:
+            # Update the page with translations
+            self.client.pages.update(
+                page_id,
+                properties={
+                    "Translation": {
+                        "rich_text": [{
+                            "text": {
+                                "content": translations['chinese']
+                            }
+                        }]
+                    },
+                    "Translation En": {
+                        "rich_text": [{
+                            "text": {
+                                "content": translations['english']
+                            }
+                        }]
+                    }
+                }
+            )
+
+            logger.info(f"Successfully updated translations for page {page_id}")
+
+        except Exception as e:
+            logger.error(f"Error updating translations: {str(e)}")
+            raise
