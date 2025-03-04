@@ -89,6 +89,13 @@ class NotionHandler:
                             "content": translations['english']
                         }
                     }]
+                },
+                "Transcription": {
+                    "rich_text": [{
+                        "text": {
+                            "content": translations.get('phonetic', '')
+                        }
+                    }]
                 }
             }
 
